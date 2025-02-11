@@ -6,6 +6,7 @@ CanControl::CanControl(rclcpp::Node::SharedPtr node)
     : node_(node), if_name_("can0"), can_socket_(-1), wheel_base_(0.6) {
   READ_PARAM(std::string, "can_name", (if_name_), "can0");
   READ_PARAM(double, "wheel_base", (wheel_base_), 0.6);
+  READ_PARAM(double, "dt", (dt_), 0.05);
 
   node_->declare_parameter<std::vector<int64_t>>("ultrasonic_number",
                                                  std::vector<int64_t>{});
@@ -24,8 +25,7 @@ CanControl::CanControl(rclcpp::Node::SharedPtr node)
 
   cmd_vel_subscription_ = node_->create_subscription<geometry_msgs::msg::Twist>(
       "/cmd_vel", 10,
-      std::bind(&CanControl::cmd_vel_callback, this,
-                std::placeholders::_1));
+      std::bind(&CanControl::cmd_vel_callback, this, std::placeholders::_1));
 
   chassis_info_fb_publisher_ =
       node_->create_publisher<yhs_can_interfaces::msg::ChassisInfoFb>(
@@ -131,15 +131,15 @@ void CanControl::ctrl_cmd_callback(
   }
 }
 
-void cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel_msg) {
+void CanControl::cmd_vel_callback(
+    const geometry_msgs::msg::Twist::SharedPtr cmd_vel_msg) {
   yhs_can_interfaces::msg::CtrlCmd msg;
-  // 线速度 (m/s)
+  // Line speed (m/s)
   msg.ctrl_cmd_velocity = cmd_vel_msg->linear.x;
 
-  // 角速度 (rad/s) to 度
-  double dt = 0.05;
-  msg.ctrl_cmd_steering = cmd_vel_msg->angular.z * dt * (180.0 / 3.1415);
-  // 04: D档
+  // Angular velocity (rad/s) to degrees
+  msg.ctrl_cmd_steering = cmd_vel_msg->angular.z * dt_ * (180.0 / 3.1415);
+  // 04: Drive mode
   msg.ctrl_cmd_gear = 4;
 
   ctrl_cmd_callback(&msg);

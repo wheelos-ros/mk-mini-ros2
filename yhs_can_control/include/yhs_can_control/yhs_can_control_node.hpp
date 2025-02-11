@@ -48,7 +48,7 @@ class CanControl {
 
   std::vector<int64_t> ultrasonic_number_;
 
-  rclcpp::Time last_cmd_vel_time_;
+  double dt_;
 
   rclcpp::Subscription<yhs_can_interfaces::msg::IoCmd>::SharedPtr
       io_cmd_subscriber_;
